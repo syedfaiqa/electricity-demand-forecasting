@@ -25,5 +25,5 @@ factor impact, and trends using interactive charts.
 Open the HTML files directly in a browser  
 or use Live Server extension in VS Code.
 
-## 👩‍💻 Author
+##  Author
 **Syed Fiqa**
