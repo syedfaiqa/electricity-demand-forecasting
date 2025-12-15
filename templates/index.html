@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electricity Demand Predictor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <style>
+        :root {
+            --primary: #cb7518;
+            --primary-light: #2c6bd7;
+            --secondary: #1a118f;
+            --warning: #fbbc05;
+            --danger: #ea4335;
+            --gray-100: #f8f9fa;
+            --gray-200: #e9ecef; --gray-300: #dee2e6;
+            --gray-600: #6c757d;
+            --gray-800: #343a40;
+            --gray-900: #212529;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--gray-100);
+            color: var(--gray-900);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--gray-300);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        nav ul {
+            display: flex;
+            gap: 20px;
+            list-style: none;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: var(--gray-600);
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        nav a:hover, nav a.active {
+            color: var(--primary);
+            background-color: var(--primary-light);
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+        }
+
+        .sidebar {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: var(--gray-800);
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--gray-300);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: rgb(145, 19, 19);
+            border: none;
+            border-radius: 4px;
+            padding: 10px 15px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #7a7d82;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--gray-800);
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+
+        .metric-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .metric-label {
+            color: var(--gray-600);
+            font-size: 14px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        .prediction-summary {
+            background-color: var(--gray-100);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .prediction-summary h3 {
+            margin-bottom: 10px;
+        }
+
+        .prediction-item {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--gray-300);
+            padding: 10px 0;
+        }
+
+        .prediction-item:last-child {
+            border-bottom: none;
+        }
+
+        .anomaly {
+            color: var(--danger);
+            font-weight: 500;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .filter-btn {
+            background-color: var(--gray-200);
+            color: var(--gray-800);
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .filter-btn.active {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--gray-300);
+            margin-bottom: 15px;
+        }
+
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            color: var(--gray-600);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            font-weight: 500;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--gray-300);
+            text-align: center;
+            color: var(--gray-600);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 3v2"></path>
+                    <path d="M18 15v4"></path>
+                    <path d="M18 22v-1"></path>
+                    <path d="M6 3v4"></path>
+                    <path d="M6 15v2"></path>
+                    <path d="M6 22v-3"></path>
+                    <path d="M2 12h20"></path>
+                    <path d="M6 8v4"></path>
+                    <path d="M18 8v4"></path>
+                </svg>
+                PowerPredict AI
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="{{ url_for('home') }}" class="active">Dashboard</a></li>
+                    <li><a href="{{ url_for('forecasts') }}">Forecasts</a></li>
+                    <li><a href="{{ url_for('analytics') }}">Analytics</a></li>
+                    {% if current_user.is_authenticated %}
+                        <li><a href="{{ url_for('logout') }}">Logout ({{ current_user.id }})</a></li>
+                    {% else %}
+                        <li><a href="{{ url_for('login') }}">Login</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </header>
+
+        <div class="dashboard">
+            <div class="sidebar">
+                <h2>Prediction Parameters</h2>
+                <form id="prediction-form">
+                    <div class="form-group">
+                        <label for="area">Area</label>
+                        <select id="area" name="area" required>
+                            <option value="0">Central Delhi</option>
+                            <option value="1">North Delhi</option>
+                            <option value="2">South Delhi</option>
+                            <option value="3">East Delhi</option>
+                            <option value="4">West Delhi</option>
+                            <option value="5">New Delhi</option>
+                            <option value="0">Old Delhi</option>
+                            <option value="1">North West Delhi</option>
+                            <option value="2">North East Delhi</option>
+                            <option value="3">South West Delhi</option>
+                            <option value="4">South East Delhi</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="temperature">Temperature (°C)</label>
+                        <input type="number" step="0.01" id="temperature" name="temperature" value="25.50" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="humidity">Humidity (%)</label>
+                        <input type="number" step="0.01" id="humidity" name="humidity" value="65.20" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="windSpeed">Wind Speed (km/h)</label>
+                        <input type="number" step="0.01" id="windSpeed" name="windSpeed" value="12.70" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="dayOfWeek">Day of Week (1-7)</label>
+                        <input type="number" step="1" id="dayOfWeek" name="dayOfWeek" value="3" min="1" max="7" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="holiday">Holiday (0-1)</label>
+                        <input type="number" step="1" id="holiday" name="holiday" value="0" min="0" max="1" required>
+                    </div>
+                    <button type="submit">Generate Prediction</button>
+                </form>
+
+                <div class="prediction-summary">
+                    <h3>Current Prediction Summary</h3>
+                    <div class="prediction-item">
+                        <span>Predicted Demand</span>
+                        <span id="summaryDemand">N/A</span>
+                    </div>
+                    <div class="prediction-item">
+                        <span>Confidence</span>
+                        <span id="summaryConfidence">90%</span>
+                    </div>
+                    <div class="prediction-item">
+                        <span>Anomalies</span>
+                        <span id="summaryAnomalies" class="anomaly">0 detected</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="metrics">
+                    <div class="metric-card">
+                        <div class="metric-label">Current Demand</div>
+                        <div class="metric-value" id="currentDemand">6.2 GW</div>
+                        <div id="currentDemandChange" style="color: var(--secondary);">+3.1% from yesterday</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Today's Peak</div>
+                        <div class="metric-value" id="todaysPeak">7.8 GW</div>
+                        <div id="todaysPeakChange" style="color: var(--danger);">+5.4% from forecast</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Week's Average</div>
+                        <div class="metric-value" id="weeksAverage">5.9 GW</div>
+                        <div id="weeksAverageChange" style="color: var(--secondary);">-1.2% from last week</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Model Accuracy</div>
+                        <div class="metric-value" id="modelAccuracy">93.7%</div>
+                        <div id="modelAccuracyChange" style="color: var(--secondary);">+0.5% improvement</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Electricity Demand Forecast</h2>
+                        <div class="filters">
+                            <button class="filter-btn">Hourly</button>
+                            <button class="filter-btn active">Daily</button>
+                            <button class="filter-btn">Weekly</button>
+                            <button class="filter-btn">Monthly</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="forecast-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Advanced Analytics</h2>
+                    </div>
+                    <div class="tabs">
+                        <div class="tab active" data-tab="historical">Historical Comparison</div>
+                        <div class="tab" data-tab="factors">Contributing Factors</div>
+                        <div class="tab" data-tab="anomalies">Anomaly Detection</div>
+                    </div>
+
+                    <div class="tab-content active" id="historical-tab">
+                        <div class="chart-container">
+                            <canvas id="historical-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="factors-tab">
+                        <div class="chart-container">
+                            <canvas id="factors-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="anomalies-tab">
+                        <div class="chart-container">
+                            <canvas id="anomalies-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>©️ 2025 PowerPredict AI - Electricity Demand Prediction Platform</p>
+        </footer>
+    </div>
+
+    <script>
+        // Sample data for charts
+        const dates = ['Apr 8', 'Apr 9', 'Apr 10', 'Apr 11', 'Apr 12', 'Apr 13', 'Apr 14', 'Apr 15', 'Apr 16', 'Apr 17'];
+        const actualData = [5.8, 6.1, 5.9, 6.3, 7.2, 6.5, 5.4, null, null, null];
+        const predictedData = [5.9, 6.0, 6.2, 6.4, 7.0, 6.3, 5.6, 6.2, 6.5, 6.8];
+        const upperBound = [6.3, 6.4, 6.6, 6.8, 7.4, 6.7, 6.0, 6.6, 6.9, 7.2];
+        const lowerBound = [5.5, 5.6, 5.8, 6.0, 6.6, 5.9, 5.2, 5.8, 6.1, 6.4];
+        const anomaliesData = [5.8, 6.1, 5.9, 6.3, 8.5, 6.5, 5.4, 6.2, 6.5, 8.9];
+        const anomalyPoints = [0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+
+        // Initialize charts
+        document.addEventListener('DOMContentLoaded', function() {
+            // Main forecast chart
+            const forecastCtx = document.getElementById('forecast-chart').getContext('2d');
+            const forecastChart = new Chart(forecastCtx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Actual Demand',
+                            data: actualData,
+                            borderColor: '#1a73e8',
+                            backgroundColor: 'transparent',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#1a73e8',
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Predicted Demand',
+                            data: predictedData,
+                            borderColor: '#34a853',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointBackgroundColor: '#34a853',
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Upper Bound',
+                            data: upperBound,
+                            borderColor: 'rgba(251, 188, 5, 0.5)',
+                            backgroundColor: 'transparent',
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Lower Bound',
+                            data: lowerBound,
+                            borderColor: 'rgba(251, 188, 5, 0.5)',
+                            backgroundColor: 'rgba(251, 188, 5, 0.2)',
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            fill: '+1',
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Electricity Demand (GW)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Historical comparison chart
+            const historicalCtx = document.getElementById('historical-chart').getContext('2d');
+            const historicalChart = new Chart(historicalCtx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'This Week',
+                            data: [5.8, 6.1, 5.9, 6.3, 7.2, 6.5, 5.4],
+                            borderColor: '#1a73e8',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Last Week',
+                            data: [5.5, 5.9, 6.0, 6.1, 7.0, 6.2, 5.3],
+                            borderColor: '#fbbc05',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Last Month (Same Week)',
+                            data: [5.2, 5.6, 5.7, 5.9, 6.8, 6.0, 5.0],
+                            borderColor: '#ea4335',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Electricity Demand (GW)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Contributing factors chart
+            const factorsCtx = document.getElementById('factors-chart').getContext('2d');
+            const factorsChart = new Chart(factorsCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Temperature', 'Day of Week', 'Holidays', 'Season', 'Economic Activity', 'Special Events'],
+                    datasets: [
+                        {
+                            label: 'Impact Factor (%)',
+                            data: [35, 25, 15, 10, 10, 5],
+                            backgroundColor: [
+                                '#1a73e8',
+                                '#34a853',
+                                '#fbbc05',
+                                '#ea4335',
+                                '#9c27b0',
+                                '#ff9800'
+                            ],
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Impact on Prediction (%)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Anomaly detection chart
+            const anomaliesCtx = document.getElementById('anomalies-chart').getContext('2d');
+            const anomaliesChart = new Chart(anomaliesCtx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Demand',
+                            data: anomaliesData,
+                            borderColor: '#1a73e8',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Anomalies',
+                            data: anomalyPoints.map((point, idx) => point === 1 ? anomaliesData[idx] : null),
+                            borderColor: '#ea4335',
+                            backgroundColor: '#ea4335',
+                            borderWidth: 0,
+                            pointRadius: 8,
+                            pointHoverRadius: 10
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                    const idx = tooltipItems[0].dataIndex;
+                                    return anomalyPoints[idx] === 1 ? 'ANOMALY DETECTED: ' + dates[idx] : dates[idx];
+                                },
+                                label: function(context) {
+                                    const idx = context.dataIndex;
+                                    if (context.datasetIndex === 1 && anomalyPoints[idx] === 1) {
+                                        return [
+                                            'Demand: ' + anomaliesData[idx] + ' GW',
+                                            'Expected: ' + (anomaliesData[idx] - 2).toFixed(1) + ' GW',
+                                            'Deviation: +' + (anomaliesData[idx] - (anomaliesData[idx] - 2)).toFixed(1) + ' GW (+' + (((anomaliesData[idx] / (anomaliesData[idx] - 2)) - 1) * 100).toFixed(1) + '%)'
+                                        ];
+                                    }
+                                    return 'Demand: ' + context.raw + ' GW';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Electricity Demand (GW)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Tab switching functionality
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    const tabId = tab.getAttribute('data-tab');
+                    document.getElementById(tabId + '-tab').classList.add('active');
+                });
+            });
+
+            // Filter button functionality
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    // In a real application, this would update the chart data granularity
+                });
+            });
+
+            // Form submission handling
+            $('#prediction-form').on('submit', function(e) {
+                e.preventDefault();
+                const formData = $(this).serialize();
+                simulatePrediction(formData, forecastChart);
+            });
+
+            function simulatePrediction(formData, chart) {
+                const formValues = {};
+                formData.split('&').forEach(item => {
+                    const [key, value] = item.split('=');
+                    formValues[key] = parseFloat(value);
+                });
+
+                // Calculate predicted demand
+                const predictedDemand = (
+                    5.5 +
+                    (formValues.temperature * 0.05) +
+                    (formValues.humidity * 0.01) -
+                    (formValues.windSpeed * 0.02) +
+                    (formValues.dayOfWeek * 0.1) +
+                    (formValues.holiday * 0.5)
+                ).toFixed(2);
+
+                // Update prediction summary
+                $('#summaryDemand').text(predictedDemand + ' GW');
+                $('#summaryError').text('±4.2%');
+                $('#summaryAnomalies').text('0 detected');
+
+                // Update forecast chart
+                const newPrediction = parseFloat(predictedDemand);
+                chart.data.datasets[1].data[chart.data.datasets[1].data.length - 1] = newPrediction;
+                chart.update();
+
+                // Update metrics
+                // Current Demand: Use the predicted demand as the current demand
+                $('#currentDemand').text(predictedDemand + ' GW');
+                const yesterdayDemand = 6.2; // Example: Hardcoded for simplicity, could be dynamic
+                const currentDemandChange = ((predictedDemand - yesterdayDemand) / yesterdayDemand * 100).toFixed(1);
+                $('#currentDemandChange').text(`${currentDemandChange > 0 ? '+' : ''}${currentDemandChange}% from yesterday`);
+                $('#currentDemandChange').css('color', currentDemandChange >= 0 ? 'var(--secondary)' : 'var(--danger)');
+
+                // Today's Peak: Assume the peak is slightly higher than the predicted demand
+                const todaysPeak = (newPrediction * 1.1).toFixed(2); // Example: 10% higher than predicted
+                $('#todaysPeak').text(todaysPeak + ' GW');
+                const forecastPeak = 7.5; // Example: Hardcoded for simplicity
+                const peakChange = ((todaysPeak - forecastPeak) / forecastPeak * 100).toFixed(1);
+                $('#todaysPeakChange').text(`${peakChange > 0 ? '+' : ''}${peakChange}% from forecast`);
+                $('#todaysPeakChange').css('color', peakChange >= 0 ? 'var(--danger)' : 'var(--secondary)');
+
+                // Week's Average: Calculate based on historical data and new prediction
+                const historicalData = [5.8, 6.1, 5.9, 6.3, 7.2, 6.5, newPrediction]; // Include new prediction
+                const weeksAverage = (historicalData.reduce((sum, val) => sum + val, 0) / historicalData.length).toFixed(2);
+                $('#weeksAverage').text(weeksAverage + ' GW');
+                const lastWeekAverage = 5.9; // Example: Hardcoded for simplicity
+                const averageChange = ((weeksAverage - lastWeekAverage) / lastWeekAverage * 100).toFixed(1);
+                $('#weeksAverageChange').text(`${averageChange > 0 ? '+' : ''}${averageChange}% from last week`);
+                $('#weeksAverageChange').css('color', averageChange >= 0 ? 'var(--secondary)' : 'var(--danger)');
+
+                // Model Accuracy: Simulate a slight variation in accuracy
+                const modelAccuracy = (93.7 + (Math.random() * 0.5 - 0.25)).toFixed(1); // Random variation for demo
+                $('#modelAccuracy').text(modelAccuracy + '%');
+                const accuracyChange = (modelAccuracy - 93.7).toFixed(1);
+                $('#modelAccuracyChange').text(`${accuracyChange > 0 ? '+' : ''}${accuracyChange}% improvement`);
+                $('#modelAccuracyChange').css('color', accuracyChange >= 0 ? 'var(--secondary)' : 'var(--danger)');
+
+                alert('Prediction generated successfully: ' + predictedDemand + ' GW');
+            }
+        });
+    </script>
+</body>
+</html>

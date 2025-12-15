@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electricity Demand Forecasts</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --primary-light: #e8f0fe;
+            --secondary: #34a853;
+            --warning: #fbbc05;
+            --danger: #ea4335;
+            --gray-100: #f8f9fa;
+            --gray-200: #e9ecef;
+            --gray-300: #dee2e6;
+            --gray-600: #6c757d;
+            --gray-800: #343a40;
+            --gray-900: #212529;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--gray-100);
+            color: var(--gray-900);
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--gray-300);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        nav ul {
+            display: flex;
+            gap: 20px;
+            list-style: none;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: var(--gray-600);
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        nav a:hover, nav a.active {
+            color: var(--primary);
+            background-color: var(--primary-light);
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+        }
+
+        .sidebar {
+            background: linear-gradient(180deg, #E6F0FA 0%, #F5FAFF 100%);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sidebar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.3) 0%, transparent 30%);
+            opacity: 0.5;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: var(--gray-800);
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--gray-300);
+            border-radius: 4px;
+            font-size: 14px;
+            background-color: white;
+            color: var(--gray-900);
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 15px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            position: relative;
+            z-index: 1;
+        }
+
+        button:hover {
+            background-color: #0d62d1;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background: linear-gradient(135deg, #e6f3e6 0%, #e0f7e9 100%);
+            background-image: radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.2) 0%, transparent 20%);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--gray-800);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            z-index: 1;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .filter-btn {
+            background-color: var(--gray-200);
+            color: var(--gray-800);
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .filter-btn.active {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .export-btn {
+            background-color: var(--secondary);
+            margin-left: 10px;
+        }
+
+        .export-btn:hover {
+            background-color: #2d9145;
+        }
+
+        footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--gray-300);
+            text-align: center;
+            color: var(--gray-600);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 3v2"></path>
+                    <path d="M18 15v4"></path>
+                    <path d="M18 22v-1"></path>
+                    <path d="M6 3v4"></path>
+                    <path d="M6 15v2"></path>
+                    <path d="M6 22v-3"></path>
+                    <path d="M2 12h20"></path>
+                    <path d="M6 8v4"></path>
+                    <path d="M18 8v4"></path>
+                </svg>
+                PowerPredict AI
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('forecasts') }}">Forecasts</a></li>
+                {% if current_user.is_authenticated %}
+                    <li><a href="{{ url_for('logout') }}">Logout ({{ current_user.id }})</a></li>
+                {% else %}
+                    <li><a href="{{ url_for('login') }}">Login</a></li>
+                {% endif %}
+                    
+                </ul>
+            </nav>
+        </header>
+
+        <div class="dashboard">
+            <div class="sidebar">
+                <h2>Forecast Parameters</h2>
+                <form id="forecast-form">
+                    <div class="form-group">
+                        <label for="area">Area</label>
+                        <select id="area" name="area" required>
+                            <option value="0">Central Delhi</option>
+                            <option value="1">North Delhi</option>
+                            <option value="2">South Delhi</option>
+                            <option value="3">East Delhi</option>
+                            <option value="4">West Delhi</option>
+                            <option value="5">New Delhi</option>
+                            <option value="0">Old Delhi</option>
+                            <option value="1">North West Delhi</option>
+                            <option value="2">North East Delhi</option>
+                            <option value="3">South West Delhi</option>
+                            <option value="4">South East Delhi</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="dateRange">Date Range</label>
+                        <input type="text" id="dateRange" name="dateRange" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="temperature">Average Temperature (°C)</label>
+                        <input type="number" step="0.01" id="temperature" name="temperature" value="25.50" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="humidity">Average Humidity (%)</label>
+                        <input type="number" step="0.01" id="humidity" name="humidity" value="65.20" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="windSpeed">Average Wind Speed (km/h)</label>
+                        <input type="number" step="0.01" id="windSpeed" name="windSpeed" value="12.70" required>
+                    </div>
+                    <button type="submit">Generate Forecast</button>
+                </form>
+            </div>
+
+            <div class="main-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Electricity Demand Forecast</h2>
+                        <div class="filters">
+                            <button class="filter-btn active">Daily</button>
+                            <button class="filter-btn">Weekly</button>
+                            <button class="filter-btn">Monthly</button>
+                            <button class="filter-btn export-btn">Export CSV</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="forecast-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>©️ 2025 PowerPredict AI - Electricity Demand Prediction Platform</p>
+        </footer>
+    </div>
+
+    <script>
+        // Initialize date picker
+        flatpickr("#dateRange", {
+            mode: "range",
+            dateFormat: "Y-m-d",
+            defaultDate: [new Date(), new Date(new Date().setDate(new Date().getDate() + 6))],
+            maxDate: new Date(new Date().setDate(new Date().getDate() + 90)),
+        });
+
+        // Sample data for forecast chart
+        const generateDates = (startDate, endDate) => {
+            const dates = [];
+            const current = new Date(startDate);
+            while (current <= endDate) {
+                dates.push(current.toLocaleDateString('en-US', {month: 'short', day: 'numeric'}));
+                current.setDate(current.getDate() + 1);
+            }
+            return dates;
+        };
+
+        let forecastDates = generateDates(new Date(), new Date(new Date().setDate(new Date().getDate() + 6)));
+        let predictedData = [6.2, 6.3, 6.5, 6.4, 6.6, 6.7, 6.5];
+        let upperBound = predictedData.map(val => val + 0.4);
+        let lowerBound = predictedData.map(val => val - 0.4);
+
+        // Initialize chart
+        document.addEventListener('DOMContentLoaded', function() {
+            const forecastCtx = document.getElementById('forecast-chart').getContext('2d');
+            const forecastChart = new Chart(forecastCtx, {
+                type: 'line',
+                data: {
+                    labels: forecastDates,
+                    datasets: [
+                        {
+                            label: 'Predicted Demand',
+                            data: predictedData,
+                            borderColor: '#34a853',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#34a853',
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Upper Bound',
+                            data: upperBound,
+                            borderColor: 'rgba(251, 188, 5, 0.5)',
+                            backgroundColor: 'transparent',
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Lower Bound',
+                            data: lowerBound,
+                            borderColor: 'rgba(251, 188, 5, 0.5)',
+                            backgroundColor: 'rgba(251, 188, 5, 0.2)',
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            fill: '+1',
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: 'var(--gray-900)'
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Electricity Demand (GW)',
+                                color: 'var(--gray-900)'
+                            },
+                            ticks: {
+                                color: 'var(--gray-900)'
+                            },
+                            grid: {
+                                color: 'var(--gray-300)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: 'var(--gray-900)'
+                            },
+                            grid: {
+                                color: 'var(--gray-300)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Filter button functionality
+            const filterBtns = document.querySelectorAll('.filter-btn:not(.export-btn)');
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    // In a real application, this would update the chart data granularity
+                });
+            });
+
+            // Export CSV functionality
+            document.querySelector('.export-btn').addEventListener('click', () => {
+                const csvContent = [
+                    'Date,Predicted Demand (GW),Lower Bound (GW),Upper Bound (GW)',
+                    ...forecastDates.map((date, i) => `${date},${predictedData[i]},${lowerBound[i]},${upperBound[i]}`)
+                ].join('\n');
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'forecast_data.csv';
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+
+            // Form submission handling
+            $('#forecast-form').on('submit', function(e) {
+                e.preventDefault();
+                const formData = $(this).serializeArray();
+                simulateForecast(formData, forecastChart);
+            });
+
+            function simulateForecast(formData, chart) {
+                const formValues = {};
+                formData.forEach(item => {
+                    formValues[item.name] = item.value;
+                });
+
+                const [startDate, endDate] = formValues.dateRange.split(' to ').map(d => new Date(d));
+                const numDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                forecastDates = generateDates(startDate, endDate);
+
+                predictedData = new Array(numDays).fill(0).map((_, i) => {
+                    const baseDemand = (
+                        6.0 +
+                        (parseFloat(formValues.temperature) * 0.05) +
+                        (parseFloat(formValues.humidity) * 0.01) -
+                        (parseFloat(formValues.windSpeed) * 0.02) +
+                        (Math.sin(i / 2) * 0.5)
+                    );
+                    return baseDemand.toFixed(2);
+                });
+
+                upperBound = predictedData.map(val => (parseFloat(val) + 0.4).toFixed(2));
+                lowerBound = predictedData.map(val => (parseFloat(val) - 0.4).toFixed(2));
+
+                // Update chart
+                chart.data.labels = forecastDates;
+                chart.data.datasets[0].data = predictedData;
+                chart.data.datasets[1].data = upperBound;
+                chart.data.datasets[2].data = lowerBound;
+                chart.update();
+
+                alert(`Forecast generated successfully for ${numDays} days`);
+            }
+        });
+    </script>
+</body>
+</html>
